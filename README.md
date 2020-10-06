@@ -1,1 +1,1 @@
-# ConnectPaySDK
+# ConnectPaySDK_iOS
