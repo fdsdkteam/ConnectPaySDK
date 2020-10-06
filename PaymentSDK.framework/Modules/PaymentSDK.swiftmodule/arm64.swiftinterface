@@ -1,0 +1,971 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 5.1.3 (swiftlang-1100.0.282.1 clang-1100.0.33.15)
+// swift-module-flags: -target arm64-apple-ios11.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -module-name PaymentSDK
+import CommonCrypto
+import Darwin
+import Foundation
+import PayWithMyBank
+@_exported import PaymentSDK
+import Swift
+import SystemConfiguration
+import TMXProfiling
+import UIKit
+import WebKit
+public protocol Authenticator {
+  func authenticate(_ bytes: Swift.Array<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+}
+public protocol PaddingProtocol {
+  func add(to: Swift.Array<Swift.UInt8>, blockSize: Swift.Int) -> Swift.Array<Swift.UInt8>
+  func remove(from: Swift.Array<Swift.UInt8>, blockSize: Swift.Int?) -> Swift.Array<Swift.UInt8>
+}
+public enum Padding : PaymentSDK.PaddingProtocol {
+  case noPadding, zeroPadding, pkcs7, pkcs5
+  public func add(to: Swift.Array<Swift.UInt8>, blockSize: Swift.Int) -> Swift.Array<Swift.UInt8>
+  public func remove(from: Swift.Array<Swift.UInt8>, blockSize: Swift.Int?) -> Swift.Array<Swift.UInt8>
+  public static func == (a: PaymentSDK.Padding, b: PaymentSDK.Padding) -> Swift.Bool
+  public var hashValue: Swift.Int {
+    get
+  }
+  public func hash(into hasher: inout Swift.Hasher)
+}
+public struct CFB : PaymentSDK.BlockMode {
+  public enum Error : Swift.Error {
+    case invalidInitializationVector
+    public static func == (a: PaymentSDK.CFB.Error, b: PaymentSDK.CFB.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public let options: PaymentSDK.BlockModeOption
+  public init(iv: Swift.Array<Swift.UInt8>)
+  public func worker(blockSize: Swift.Int, cipherOperation: @escaping PaymentSDK.CipherOperationOnBlock) throws -> PaymentSDK.CipherModeWorker
+}
+final public class ChaCha20 {
+  public enum Error : Swift.Error {
+    case invalidKeyOrInitializationVector
+    case notSupported
+    public static func == (a: PaymentSDK.ChaCha20.Error, b: PaymentSDK.ChaCha20.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public static let blockSize: Swift.Int
+  final public let keySize: Swift.Int
+  public init(key: Swift.Array<Swift.UInt8>, iv nonce: Swift.Array<Swift.UInt8>) throws
+  @objc deinit
+}
+extension ChaCha20 : PaymentSDK.Cipher {
+  final public func encrypt(_ bytes: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  final public func decrypt(_ bytes: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+}
+extension ChaCha20 {
+  public struct ChaChaEncryptor : PaymentSDK.Cryptor, PaymentSDK.Updatable {
+    mutating public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
+    public func seek(to: Swift.Int) throws
+  }
+}
+extension ChaCha20 {
+  public struct ChaChaDecryptor : PaymentSDK.Cryptor, PaymentSDK.Updatable {
+    mutating public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = true) throws -> Swift.Array<Swift.UInt8>
+    public func seek(to: Swift.Int) throws
+  }
+}
+extension ChaCha20 : PaymentSDK.Cryptors {
+  final public func makeEncryptor() -> PaymentSDK.Cryptor & PaymentSDK.Updatable
+  final public func makeDecryptor() -> PaymentSDK.Cryptor & PaymentSDK.Updatable
+}
+final public class Scrypt {
+  public init(password: Swift.Array<Swift.UInt8>, salt: Swift.Array<Swift.UInt8>, dkLen: Swift.Int, N: Swift.Int, r: Swift.Int, p: Swift.Int) throws
+  final public func calculate() throws -> [Swift.UInt8]
+  @objc deinit
+}
+public class CBCMAC : PaymentSDK.Authenticator {
+  public enum Error : Swift.Error {
+    case wrongKeyLength
+    public static func == (a: PaymentSDK.CBCMAC.Error, b: PaymentSDK.CBCMAC.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public init(key: Swift.Array<Swift.UInt8>) throws
+  public func authenticate(_ bytes: Swift.Array<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  @objc deinit
+}
+public enum CipherError : Swift.Error {
+  case encrypt
+  case decrypt
+  public static func == (a: PaymentSDK.CipherError, b: PaymentSDK.CipherError) -> Swift.Bool
+  public var hashValue: Swift.Int {
+    get
+  }
+  public func hash(into hasher: inout Swift.Hasher)
+}
+public protocol Cipher : AnyObject {
+  var keySize: Swift.Int { get }
+  func encrypt(_ bytes: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  func encrypt(_ bytes: Swift.Array<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  func decrypt(_ bytes: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  func decrypt(_ bytes: Swift.Array<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+}
+extension Cipher {
+  public func encrypt(_ bytes: Swift.Array<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  public func decrypt(_ bytes: Swift.Array<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+}
+public struct ECB : PaymentSDK.BlockMode {
+  public let options: PaymentSDK.BlockModeOption
+  public init()
+  public func worker(blockSize: Swift.Int, cipherOperation: @escaping PaymentSDK.CipherOperationOnBlock) throws -> PaymentSDK.CipherModeWorker
+}
+public class Reachability {
+  @objc deinit
+}
+public class BlockDecryptor : PaymentSDK.Cryptor, PaymentSDK.Updatable {
+  public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
+  public func seek(to position: Swift.Int) throws
+  @objc deinit
+}
+public struct AnyEncodable : Swift.Encodable {
+  public let value: Any
+  public init<T>(_ value: T?)
+}
+@usableFromInline
+internal protocol _AnyEncodable {
+  var value: Any { get }
+  init<T>(_ value: T?)
+}
+extension AnyEncodable : PaymentSDK._AnyEncodable {
+}
+extension _AnyEncodable {
+  public func encode(to encoder: Swift.Encoder) throws
+}
+extension AnyEncodable : Swift.Equatable {
+  public static func == (lhs: PaymentSDK.AnyEncodable, rhs: PaymentSDK.AnyEncodable) -> Swift.Bool
+}
+extension AnyEncodable : Swift.CustomStringConvertible {
+  public var description: Swift.String {
+    get
+  }
+}
+extension AnyEncodable : Swift.CustomDebugStringConvertible {
+  public var debugDescription: Swift.String {
+    get
+  }
+}
+extension AnyEncodable : Swift.ExpressibleByNilLiteral {
+}
+extension AnyEncodable : Swift.ExpressibleByBooleanLiteral {
+  public typealias BooleanLiteralType = Swift.Bool
+}
+extension AnyEncodable : Swift.ExpressibleByIntegerLiteral {
+  public typealias IntegerLiteralType = Swift.Int
+}
+extension AnyEncodable : Swift.ExpressibleByFloatLiteral {
+  public typealias FloatLiteralType = Swift.Double
+}
+extension AnyEncodable : Swift.ExpressibleByStringLiteral {
+  public typealias StringLiteralType = Swift.String
+  public typealias ExtendedGraphemeClusterLiteralType = Swift.String
+  public typealias UnicodeScalarLiteralType = Swift.String
+}
+extension AnyEncodable : Swift.ExpressibleByArrayLiteral {
+  public typealias ArrayLiteralElement = Any
+}
+extension AnyEncodable : Swift.ExpressibleByDictionaryLiteral {
+  public typealias Key = Swift.AnyHashable
+  public typealias Value = Any
+}
+extension _AnyEncodable {
+  public init(nilLiteral _: ())
+  public init(booleanLiteral value: Swift.Bool)
+  public init(integerLiteral value: Swift.Int)
+  public init(floatLiteral value: Swift.Double)
+  public init(extendedGraphemeClusterLiteral value: Swift.String)
+  public init(stringLiteral value: Swift.String)
+  public init(arrayLiteral elements: Any...)
+  public init(dictionaryLiteral elements: (Swift.AnyHashable, Any)...)
+}
+extension AES : PaymentSDK.Cryptors {
+  final public func makeEncryptor() throws -> PaymentSDK.Cryptor & PaymentSDK.Updatable
+  final public func makeDecryptor() throws -> PaymentSDK.Cryptor & PaymentSDK.Updatable
+}
+public protocol CipherModeWorker {
+  var cipherOperation: PaymentSDK.CipherOperationOnBlock { get }
+  var additionalBufferSize: Swift.Int { get }
+  mutating func encrypt(block plaintext: Swift.ArraySlice<Swift.UInt8>) -> Swift.Array<Swift.UInt8>
+  mutating func decrypt(block ciphertext: Swift.ArraySlice<Swift.UInt8>) -> Swift.Array<Swift.UInt8>
+}
+public protocol BlockModeWorker : PaymentSDK.CipherModeWorker {
+  var blockSize: Swift.Int { get }
+}
+public protocol CounterModeWorker : PaymentSDK.CipherModeWorker {
+  associatedtype Counter
+  var counter: Self.Counter { get set }
+}
+public protocol SeekableModeWorker : PaymentSDK.CipherModeWorker {
+  mutating func seek(to position: Swift.Int) throws
+}
+public protocol StreamModeWorker : PaymentSDK.CipherModeWorker {
+}
+public protocol FinalizingEncryptModeWorker : PaymentSDK.CipherModeWorker {
+  mutating func finalize(encrypt ciphertext: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.ArraySlice<Swift.UInt8>
+}
+public protocol FinalizingDecryptModeWorker : PaymentSDK.CipherModeWorker {
+  @discardableResult
+  mutating func willDecryptLast(bytes ciphertext: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.ArraySlice<Swift.UInt8>
+  mutating func didDecryptLast(bytes plaintext: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.ArraySlice<Swift.UInt8>
+  mutating func finalize(decrypt plaintext: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.ArraySlice<Swift.UInt8>
+}
+public enum PKCS5 {
+}
+public protocol Cryptor {
+  mutating func seek(to: Swift.Int) throws
+}
+public protocol Updatable {
+  mutating func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool) throws -> Swift.Array<Swift.UInt8>
+  mutating func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
+}
+extension Updatable {
+  mutating public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
+  mutating public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
+  mutating public func update(withBytes bytes: Swift.Array<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
+  mutating public func update(withBytes bytes: Swift.Array<Swift.UInt8>, isLast: Swift.Bool = false, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
+  mutating public func finish(withBytes bytes: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  mutating public func finish(withBytes bytes: Swift.Array<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  mutating public func finish() throws -> Swift.Array<Swift.UInt8>
+  mutating public func finish(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
+  mutating public func finish(withBytes bytes: Swift.Array<Swift.UInt8>, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
+  mutating public func finish(output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
+}
+public struct MainScreenConfiguration : Swift.Codable {
+  public init(from decoder: Swift.Decoder) throws
+  public func encode(to encoder: Swift.Encoder) throws
+}
+extension String {
+  public func decryptBase64ToString(cipher: PaymentSDK.Cipher) throws -> Swift.String
+  public func decryptBase64(cipher: PaymentSDK.Cipher) throws -> Swift.Array<Swift.UInt8>
+}
+final public class CMAC : PaymentSDK.CBCMAC {
+  override public init(key: Swift.Array<Swift.UInt8>) throws
+  @objc deinit
+}
+public struct PCBC : PaymentSDK.BlockMode {
+  public enum Error : Swift.Error {
+    case invalidInitializationVector
+    public static func == (a: PaymentSDK.PCBC.Error, b: PaymentSDK.PCBC.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public let options: PaymentSDK.BlockModeOption
+  public init(iv: Swift.Array<Swift.UInt8>)
+  public func worker(blockSize: Swift.Int, cipherOperation: @escaping PaymentSDK.CipherOperationOnBlock) throws -> PaymentSDK.CipherModeWorker
+}
+final public class Poly1305 : PaymentSDK.Authenticator {
+  public enum Error : Swift.Error {
+    case authenticateError
+    public static func == (a: PaymentSDK.Poly1305.Error, b: PaymentSDK.Poly1305.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public static let blockSize: Swift.Int
+  public init(key: Swift.Array<Swift.UInt8>)
+  final public func authenticate(_ bytes: Swift.Array<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  @objc deinit
+}
+public protocol Cryptors : AnyObject {
+  func makeEncryptor() throws -> PaymentSDK.Cryptor & PaymentSDK.Updatable
+  func makeDecryptor() throws -> PaymentSDK.Cryptor & PaymentSDK.Updatable
+  static func randomIV(_ blockSize: Swift.Int) -> Swift.Array<Swift.UInt8>
+}
+extension Cryptors {
+  public static func randomIV(_ blockSize: Swift.Int) -> Swift.Array<Swift.UInt8>
+}
+public struct AnyDecodable : Swift.Decodable {
+  public let value: Any
+  public init<T>(_ value: T?)
+}
+@usableFromInline
+internal protocol _AnyDecodable {
+  var value: Any { get }
+  init<T>(_ value: T?)
+}
+extension AnyDecodable : PaymentSDK._AnyDecodable {
+}
+extension _AnyDecodable {
+  public init(from decoder: Swift.Decoder) throws
+}
+extension AnyDecodable : Swift.Equatable {
+  public static func == (lhs: PaymentSDK.AnyDecodable, rhs: PaymentSDK.AnyDecodable) -> Swift.Bool
+}
+extension AnyDecodable : Swift.CustomStringConvertible {
+  public var description: Swift.String {
+    get
+  }
+}
+extension AnyDecodable : Swift.CustomDebugStringConvertible {
+  public var debugDescription: Swift.String {
+    get
+  }
+}
+public struct HKDF {
+  public enum Error : Swift.Error {
+    case invalidInput
+    case derivedKeyTooLong
+    public static func == (a: PaymentSDK.HKDF.Error, b: PaymentSDK.HKDF.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public init(password: Swift.Array<Swift.UInt8>, salt: Swift.Array<Swift.UInt8>? = nil, info: Swift.Array<Swift.UInt8>? = nil, keyLength: Swift.Int? = nil, variant: PaymentSDK.HMAC.Variant = .sha256) throws
+  public func calculate() throws -> Swift.Array<Swift.UInt8>
+}
+public enum Bit : Swift.Int {
+  case zero
+  case one
+  public typealias RawValue = Swift.Int
+  public init?(rawValue: Swift.Int)
+  public var rawValue: Swift.Int {
+    get
+  }
+}
+extension Data {
+  public func checksum() -> Swift.UInt16
+  public func md5() -> Foundation.Data
+  public func sha1() -> Foundation.Data
+  public func sha224() -> Foundation.Data
+  public func sha256() -> Foundation.Data
+  public func sha384() -> Foundation.Data
+  public func sha512() -> Foundation.Data
+  public func sha3(_ variant: PaymentSDK.SHA3.Variant) -> Foundation.Data
+  public func crc32(seed: Swift.UInt32? = nil, reflect: Swift.Bool = true) -> Foundation.Data
+  public func crc32c(seed: Swift.UInt32? = nil, reflect: Swift.Bool = true) -> Foundation.Data
+  public func crc16(seed: Swift.UInt16? = nil) -> Foundation.Data
+  public func encrypt(cipher: PaymentSDK.Cipher) throws -> Foundation.Data
+  public func decrypt(cipher: PaymentSDK.Cipher) throws -> Foundation.Data
+  public func authenticate(with authenticator: PaymentSDK.Authenticator) throws -> Foundation.Data
+}
+extension Data {
+  public init(hex: Swift.String)
+  public var bytes: Swift.Array<Swift.UInt8> {
+    get
+  }
+  public func toHexString() -> Swift.String
+}
+public protocol AEAD {
+  static var kLen: Swift.Int { get }
+  static var ivRange: Swift.Range<Swift.Int> { get }
+}
+public struct OFB : PaymentSDK.BlockMode {
+  public enum Error : Swift.Error {
+    case invalidInitializationVector
+    public static func == (a: PaymentSDK.OFB.Error, b: PaymentSDK.OFB.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public let options: PaymentSDK.BlockModeOption
+  public init(iv: Swift.Array<Swift.UInt8>)
+  public func worker(blockSize: Swift.Int, cipherOperation: @escaping PaymentSDK.CipherOperationOnBlock) throws -> PaymentSDK.CipherModeWorker
+}
+extension String {
+  public var bytes: Swift.Array<Swift.UInt8> {
+    get
+  }
+  public func md5() -> Swift.String
+  public func sha1() -> Swift.String
+  public func sha224() -> Swift.String
+  public func sha256() -> Swift.String
+  public func sha384() -> Swift.String
+  public func sha512() -> Swift.String
+  public func sha3(_ variant: PaymentSDK.SHA3.Variant) -> Swift.String
+  public func crc32(seed: Swift.UInt32? = nil, reflect: Swift.Bool = true) -> Swift.String
+  public func crc32c(seed: Swift.UInt32? = nil, reflect: Swift.Bool = true) -> Swift.String
+  public func crc16(seed: Swift.UInt16? = nil) -> Swift.String
+  public func encrypt(cipher: PaymentSDK.Cipher) throws -> Swift.String
+  public func encryptToBase64(cipher: PaymentSDK.Cipher) throws -> Swift.String?
+  public func authenticate<A>(with authenticator: A) throws -> Swift.String where A : PaymentSDK.Authenticator
+}
+extension PKCS5 {
+  public struct PBKDF1 {
+    public enum Error : Swift.Error {
+      case invalidInput
+      case derivedKeyTooLong
+      public static func == (a: PaymentSDK.PKCS5.PBKDF1.Error, b: PaymentSDK.PKCS5.PBKDF1.Error) -> Swift.Bool
+      public var hashValue: Swift.Int {
+        get
+      }
+      public func hash(into hasher: inout Swift.Hasher)
+    }
+    public enum Variant {
+      case md5, sha1
+      public static func == (a: PaymentSDK.PKCS5.PBKDF1.Variant, b: PaymentSDK.PKCS5.PBKDF1.Variant) -> Swift.Bool
+      public var hashValue: Swift.Int {
+        get
+      }
+      public func hash(into hasher: inout Swift.Hasher)
+    }
+    public init(password: Swift.Array<Swift.UInt8>, salt: Swift.Array<Swift.UInt8>, variant: PaymentSDK.PKCS5.PBKDF1.Variant = .sha1, iterations: Swift.Int = 4096, keyLength: Swift.Int? = nil) throws
+    public func calculate() -> Swift.Array<Swift.UInt8>
+  }
+}
+@objc public enum Environment : Swift.Int {
+  case qa, cat, prod
+  public typealias RawValue = Swift.Int
+  public init?(rawValue: Swift.Int)
+  public var rawValue: Swift.Int {
+    get
+  }
+}
+@objc public class CPSdkConfiguration : ObjectiveC.NSObject {
+  @objc public var fdCustomerId: Swift.String!
+  @objc public var encryptionKey: Swift.String!
+  @objc public var accessToken: Swift.String!
+  @objc public var configId: Swift.String!
+  @objc public var postUrl: Swift.String!
+  @objc public init(withFdCustomerId fdCustomerId: Swift.String, encryptionKey: Swift.String, accessToken: Swift.String, configId: Swift.String, andPostUrl postUrl: Swift.String)
+  @objc deinit
+}
+@objc public class CPSDK : ObjectiveC.NSObject {
+  @objc public init(withApiKey apiKey: Swift.String, andEnvironment environment: PaymentSDK.Environment)
+  @objc public func closeAccount(withCpSdkConfiguration cpSdkConfiguration: PaymentSDK.CPSdkConfiguration, andCloseAccountConfiguration closeAccountConfiguration: PaymentSDK.CloseAccountConfiguration) -> PaymentSDK.CloseAccount?
+  @objc public func manualEnrollment(withCpSdkConfiguration cpSdkConfiguration: PaymentSDK.CPSdkConfiguration, andManualEnrollmentConfiguration manualEnrollmentConfiguration: PaymentSDK.ManualEnrollmentConfiguration) -> PaymentSDK.ManualEnrollment?
+  @objc public func updateEnrollment(withCpSdkConfiguration cpSdkConfiguration: PaymentSDK.CPSdkConfiguration, andUpdateEnrollmentConfiguration updateEnrollmentConfiguration: PaymentSDK.ManualEnrollmentConfiguration) -> PaymentSDK.UpdateEnrollment?
+  @objc public func manualDeposit(withCpSdkConfiguration cpSdkConfiguration: PaymentSDK.CPSdkConfiguration, andManualDepositConfiguration manualDepositConfiguration: PaymentSDK.ManualDepositConfiguration) -> PaymentSDK.ManualDeposit?
+  @objc public func accountValidation(withCpSdkConfiguration cpSdkConfiguration: PaymentSDK.CPSdkConfiguration, andAccountValidationConfiguration accountValidationConfiguration: PaymentSDK.AccountValidationConfiguration) -> PaymentSDK.AccountValidation?
+  @objc public func enrollmentAccountDetail(withCpSdkConfiguration cpSdkConfiguration: PaymentSDK.CPSdkConfiguration, andEnrollmentAccountDetailConfiguration enrollmentAccountDetailConfiguration: PaymentSDK.ManualEnrollmentConfiguration) -> PaymentSDK.EnrollmentAccountDetails?
+  @objc override dynamic public init()
+  @objc deinit
+}
+@objc public class BaseCPFlow : ObjectiveC.NSObject {
+  @objc override dynamic public init()
+  @objc deinit
+  @objc public func start(completionHandler: @escaping ([Swift.String : Swift.AnyObject]?) -> Swift.Void)
+  @objc public func stop()
+}
+@objc public class CloseAccountConfiguration : ObjectiveC.NSObject {
+  @objc public init(withAccountNumber accountNumber: Swift.String, andReason reason: Swift.String?)
+  @objc deinit
+}
+@objc public class CloseAccount : PaymentSDK.BaseCPFlow {
+  @objc deinit
+}
+@objc public class PhoneNumberConfiguration : ObjectiveC.NSObject {
+  @objc public var id: Swift.String?
+  @objc public var phoneNumber: Swift.String?
+  @objc public var type: Swift.String?
+  @objc override dynamic public init()
+  @objc deinit
+}
+@objc public class SecurityQuestionConfiguration : ObjectiveC.NSObject {
+  @objc public var id: Swift.String?
+  @objc public var question: Swift.String?
+  @objc public var answer: Swift.String?
+  @objc override dynamic public init()
+  @objc deinit
+}
+@objc public class ManualEnrollmentConfiguration : ObjectiveC.NSObject {
+  @objc public var routingNumber: Swift.String?
+  @objc public var accountNumber: Swift.String?
+  @objc public var accountType: Swift.String?
+  @objc public var onlineBankTransactionId: Swift.String?
+  @objc public var cpCardNumber: Swift.String?
+  @objc public var firstName: Swift.String?
+  @objc public var lastName: Swift.String?
+  @objc public var email: Swift.String?
+  @objc public var phoneNumbers: [PaymentSDK.PhoneNumberConfiguration]?
+  @objc public var streetAddress: Swift.String?
+  @objc public var apartmentNumber: Swift.String?
+  @objc public var city: Swift.String?
+  @objc public var state: Swift.String?
+  @objc public var zipCode: Swift.String?
+  @objc public var driversLicense: Swift.String?
+  @objc public var driversLicenseIssuingState: Swift.String?
+  @objc public var ssn: Swift.String?
+  @objc public var gender: Swift.String?
+  @objc public var dob: Swift.String?
+  @objc public var pin: Swift.String?
+  @objc public var newPin: Swift.String?
+  @objc public var memberSince: Swift.String?
+  @objc public var securityQuestions: [PaymentSDK.SecurityQuestionConfiguration]?
+  @objc public var genericFlag1: Swift.String?
+  @objc public var genericFlag2: Swift.String?
+  @objc public var genericFlag3: Swift.String?
+  @objc public var genericCode1: Swift.String?
+  @objc public var genericCode2: Swift.String?
+  @objc public var genericCode3: Swift.String?
+  @objc public var reportingField1: Swift.String?
+  @objc public var reportingField2: Swift.String?
+  @objc public var reportingField3: Swift.String?
+  @objc override dynamic public init()
+  @objc deinit
+}
+@objc public class ManualEnrollment : PaymentSDK.BaseCPFlow {
+  @objc deinit
+}
+@objc public class UpdateEnrollment : PaymentSDK.BaseCPFlow {
+  @objc deinit
+}
+@objc public class EnrollmentAccountDetails : PaymentSDK.BaseCPFlow {
+  @objc deinit
+}
+@objc public class ManualDepositConfiguration : ObjectiveC.NSObject {
+  @objc public var accountNumber: Swift.String?
+  @objc public var firstDepositedAmount: Swift.String?
+  @objc public var secondDepositedAmount: Swift.String?
+  @objc override dynamic public init()
+  @objc deinit
+}
+@objc public class ManualDeposit : PaymentSDK.BaseCPFlow {
+  @objc deinit
+}
+@objc public class AccountValidationConfiguration : ObjectiveC.NSObject {
+  @objc public var cpCardNumber: Swift.String?
+  @objc public var pin: Swift.String?
+  @objc override dynamic public init()
+  @objc deinit
+}
+@objc public class AccountValidation : PaymentSDK.BaseCPFlow {
+  @objc deinit
+}
+public struct CCM {
+  public enum Error : Swift.Error {
+    case invalidInitializationVector
+    case invalidParameter
+    case fail
+    public static func == (a: PaymentSDK.CCM.Error, b: PaymentSDK.CCM.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public let options: PaymentSDK.BlockModeOption
+  public var authenticationTag: Swift.Array<Swift.UInt8>?
+  public init(iv: Swift.Array<Swift.UInt8>, tagLength: Swift.Int, messageLength: Swift.Int, additionalAuthenticatedData: Swift.Array<Swift.UInt8>? = nil)
+  public init(iv: Swift.Array<Swift.UInt8>, tagLength: Swift.Int, messageLength: Swift.Int, authenticationTag: Swift.Array<Swift.UInt8>, additionalAuthenticatedData: Swift.Array<Swift.UInt8>? = nil)
+  public func worker(blockSize: Swift.Int, cipherOperation: @escaping PaymentSDK.CipherOperationOnBlock) throws -> PaymentSDK.CipherModeWorker
+}
+public enum PKCS7 {
+}
+@available(*, renamed: "Digest")
+public typealias Hash = PaymentSDK.Digest
+public struct Digest {
+  public static func md5(_ bytes: Swift.Array<Swift.UInt8>) -> Swift.Array<Swift.UInt8>
+  public static func sha1(_ bytes: Swift.Array<Swift.UInt8>) -> Swift.Array<Swift.UInt8>
+  public static func sha224(_ bytes: Swift.Array<Swift.UInt8>) -> Swift.Array<Swift.UInt8>
+  public static func sha256(_ bytes: Swift.Array<Swift.UInt8>) -> Swift.Array<Swift.UInt8>
+  public static func sha384(_ bytes: Swift.Array<Swift.UInt8>) -> Swift.Array<Swift.UInt8>
+  public static func sha512(_ bytes: Swift.Array<Swift.UInt8>) -> Swift.Array<Swift.UInt8>
+  public static func sha2(_ bytes: Swift.Array<Swift.UInt8>, variant: PaymentSDK.SHA2.Variant) -> Swift.Array<Swift.UInt8>
+  public static func sha3(_ bytes: Swift.Array<Swift.UInt8>, variant: PaymentSDK.SHA3.Variant) -> Swift.Array<Swift.UInt8>
+}
+public typealias CipherOperationOnBlock = (Swift.ArraySlice<Swift.UInt8>) -> Swift.Array<Swift.UInt8>?
+public protocol BlockMode {
+  var options: PaymentSDK.BlockModeOption { get }
+  func worker(blockSize: Swift.Int, cipherOperation: @escaping PaymentSDK.CipherOperationOnBlock) throws -> PaymentSDK.CipherModeWorker
+}
+final public class Rabbit {
+  public enum Error : Swift.Error {
+    case invalidKeyOrInitializationVector
+    public static func == (a: PaymentSDK.Rabbit.Error, b: PaymentSDK.Rabbit.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public static let ivSize: Swift.Int
+  public static let keySize: Swift.Int
+  public static let blockSize: Swift.Int
+  final public var keySize: Swift.Int {
+    get
+  }
+  convenience public init(key: Swift.Array<Swift.UInt8>) throws
+  public init(key: Swift.Array<Swift.UInt8>, iv: Swift.Array<Swift.UInt8>?) throws
+  @objc deinit
+}
+extension Rabbit : PaymentSDK.Cipher {
+  final public func encrypt(_ bytes: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  final public func decrypt(_ bytes: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+}
+final public class GCM : PaymentSDK.BlockMode {
+  public enum Mode {
+    case combined
+    case detached
+    public static func == (a: PaymentSDK.GCM.Mode, b: PaymentSDK.GCM.Mode) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  final public let options: PaymentSDK.BlockModeOption
+  public enum Error : Swift.Error {
+    case invalidInitializationVector
+    case fail
+    public static func == (a: PaymentSDK.GCM.Error, b: PaymentSDK.GCM.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  final public var authenticationTag: Swift.Array<Swift.UInt8>?
+  public init(iv: Swift.Array<Swift.UInt8>, additionalAuthenticatedData: Swift.Array<Swift.UInt8>? = nil, tagLength: Swift.Int = 16, mode: PaymentSDK.GCM.Mode = .detached)
+  convenience public init(iv: Swift.Array<Swift.UInt8>, authenticationTag: Swift.Array<Swift.UInt8>, additionalAuthenticatedData: Swift.Array<Swift.UInt8>? = nil, mode: PaymentSDK.GCM.Mode = .detached)
+  final public func worker(blockSize: Swift.Int, cipherOperation: @escaping PaymentSDK.CipherOperationOnBlock) throws -> PaymentSDK.CipherModeWorker
+  @objc deinit
+}
+final public class Checksum {
+  @objc deinit
+}
+extension Checksum {
+  public static func crc32(_ message: Swift.Array<Swift.UInt8>, seed: Swift.UInt32? = nil, reflect: Swift.Bool = true) -> Swift.UInt32
+  public static func crc32c(_ message: Swift.Array<Swift.UInt8>, seed: Swift.UInt32? = nil, reflect: Swift.Bool = true) -> Swift.UInt32
+  public static func crc16(_ message: Swift.Array<Swift.UInt8>, seed: Swift.UInt16? = nil) -> Swift.UInt16
+}
+public struct BlockModeOption : Swift.OptionSet {
+  public let rawValue: Swift.Int
+  public init(rawValue: Swift.Int)
+  public typealias Element = PaymentSDK.BlockModeOption
+  public typealias ArrayLiteralElement = PaymentSDK.BlockModeOption
+  public typealias RawValue = Swift.Int
+}
+extension ChaCha20 {
+  convenience public init(key: Swift.String, iv: Swift.String) throws
+}
+final public class MD5 {
+  public init()
+  final public func calculate(for bytes: Swift.Array<Swift.UInt8>) -> Swift.Array<Swift.UInt8>
+  @objc deinit
+}
+extension MD5 : PaymentSDK.Updatable {
+  final public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
+}
+final public class SHA1 {
+  public init()
+  final public func calculate(for bytes: Swift.Array<Swift.UInt8>) -> Swift.Array<Swift.UInt8>
+  @objc deinit
+}
+extension SHA1 : PaymentSDK.Updatable {
+  @discardableResult
+  final public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
+}
+final public class HMAC : PaymentSDK.Authenticator {
+  public enum Error : Swift.Error {
+    case authenticateError
+    case invalidInput
+    public static func == (a: PaymentSDK.HMAC.Error, b: PaymentSDK.HMAC.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public enum Variant {
+    case sha1, sha256, sha384, sha512, md5
+    public static func == (a: PaymentSDK.HMAC.Variant, b: PaymentSDK.HMAC.Variant) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public init(key: Swift.Array<Swift.UInt8>, variant: PaymentSDK.HMAC.Variant = .md5)
+  final public func authenticate(_ bytes: Swift.Array<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  @objc deinit
+}
+extension Rabbit {
+  convenience public init(key: Swift.String) throws
+  convenience public init(key: Swift.String, iv: Swift.String) throws
+}
+extension Array where Element == Swift.UInt8 {
+  public func toBase64() -> Swift.String?
+  public init(base64: Swift.String)
+}
+public protocol _UInt8Type {
+}
+extension UInt8 : PaymentSDK._UInt8Type {
+}
+extension UInt8 {
+  public func bits() -> [PaymentSDK.Bit]
+  public func bits() -> Swift.String
+}
+public struct CBC : PaymentSDK.BlockMode {
+  public enum Error : Swift.Error {
+    case invalidInitializationVector
+    public static func == (a: PaymentSDK.CBC.Error, b: PaymentSDK.CBC.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public let options: PaymentSDK.BlockModeOption
+  public init(iv: Swift.Array<Swift.UInt8>)
+  public func worker(blockSize: Swift.Int, cipherOperation: @escaping PaymentSDK.CipherOperationOnBlock) throws -> PaymentSDK.CipherModeWorker
+}
+final public class Blowfish {
+  public enum Error : Swift.Error {
+    case dataPaddingRequired
+    case invalidKeyOrInitializationVector
+    case invalidInitializationVector
+    case invalidBlockMode
+    public static func == (a: PaymentSDK.Blowfish.Error, b: PaymentSDK.Blowfish.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public static let blockSize: Swift.Int
+  final public let keySize: Swift.Int
+  public init(key: Swift.Array<Swift.UInt8>, blockMode: PaymentSDK.BlockMode = CBC(iv: Array<UInt8>(repeating: 0, count: Blowfish.blockSize)), padding: PaymentSDK.Padding) throws
+  @objc deinit
+}
+extension Blowfish : PaymentSDK.Cipher {
+  final public func encrypt<C>(_ bytes: C) throws -> Swift.Array<Swift.UInt8> where C : Swift.Collection, C.Element == Swift.UInt8, C.Index == Swift.Int
+  final public func decrypt<C>(_ bytes: C) throws -> Swift.Array<Swift.UInt8> where C : Swift.Collection, C.Element == Swift.UInt8, C.Index == Swift.Int
+}
+extension AES {
+  convenience public init(key: Swift.String, iv: Swift.String, padding: PaymentSDK.Padding = .pkcs7) throws
+}
+final public class SHA3 {
+  final public let blockSize: Swift.Int
+  final public let digestLength: Swift.Int
+  final public let markByte: Swift.UInt8
+  public enum Variant {
+    case sha224, sha256, sha384, sha512, keccak224, keccak256, keccak384, keccak512
+    public var outputLength: Swift.Int {
+      get
+    }
+    public static func == (a: PaymentSDK.SHA3.Variant, b: PaymentSDK.SHA3.Variant) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public init(variant: PaymentSDK.SHA3.Variant)
+  final public func calculate(for bytes: Swift.Array<Swift.UInt8>) -> Swift.Array<Swift.UInt8>
+  @objc deinit
+}
+extension SHA3 : PaymentSDK.Updatable {
+  final public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
+}
+final public class AEADChaCha20Poly1305 : PaymentSDK.AEAD {
+  public static let kLen: Swift.Int
+  public static var ivRange: Swift.Range<Swift.Int>
+  public static func encrypt(_ plainText: Swift.Array<Swift.UInt8>, key: Swift.Array<Swift.UInt8>, iv: Swift.Array<Swift.UInt8>, authenticationHeader: Swift.Array<Swift.UInt8>) throws -> (cipherText: Swift.Array<Swift.UInt8>, authenticationTag: Swift.Array<Swift.UInt8>)
+  public static func decrypt(_ cipherText: Swift.Array<Swift.UInt8>, key: Swift.Array<Swift.UInt8>, iv: Swift.Array<Swift.UInt8>, authenticationHeader: Swift.Array<Swift.UInt8>, authenticationTag: Swift.Array<Swift.UInt8>) throws -> (plainText: Swift.Array<Swift.UInt8>, success: Swift.Bool)
+  @objc deinit
+}
+extension Array {
+  public init(reserveCapacity: Swift.Int)
+}
+extension Array where Element == Swift.UInt8 {
+  public init(hex: Swift.String)
+  public func toHexString() -> Swift.String
+}
+extension Array where Element == Swift.UInt8 {
+  @available(*, deprecated)
+  public func chunks(size chunksize: Swift.Int) -> Swift.Array<Swift.Array<Element>>
+  public func md5() -> [Element]
+  public func sha1() -> [Element]
+  public func sha224() -> [Element]
+  public func sha256() -> [Element]
+  public func sha384() -> [Element]
+  public func sha512() -> [Element]
+  public func sha2(_ variant: PaymentSDK.SHA2.Variant) -> [Element]
+  public func sha3(_ variant: PaymentSDK.SHA3.Variant) -> [Element]
+  public func crc32(seed: Swift.UInt32? = nil, reflect: Swift.Bool = true) -> Swift.UInt32
+  public func crc32c(seed: Swift.UInt32? = nil, reflect: Swift.Bool = true) -> Swift.UInt32
+  public func crc16(seed: Swift.UInt16? = nil) -> Swift.UInt16
+  public func encrypt(cipher: PaymentSDK.Cipher) throws -> [Element]
+  public func decrypt(cipher: PaymentSDK.Cipher) throws -> [Element]
+  public func authenticate<A>(with authenticator: A) throws -> [Element] where A : PaymentSDK.Authenticator
+}
+extension PKCS5 {
+  public struct PBKDF2 {
+    public enum Error : Swift.Error {
+      case invalidInput
+      case derivedKeyTooLong
+      public static func == (a: PaymentSDK.PKCS5.PBKDF2.Error, b: PaymentSDK.PKCS5.PBKDF2.Error) -> Swift.Bool
+      public var hashValue: Swift.Int {
+        get
+      }
+      public func hash(into hasher: inout Swift.Hasher)
+    }
+    public init(password: Swift.Array<Swift.UInt8>, salt: Swift.Array<Swift.UInt8>, iterations: Swift.Int = 4096, keyLength: Swift.Int? = nil, variant: PaymentSDK.HMAC.Variant = .sha256) throws
+    public func calculate() throws -> Swift.Array<Swift.UInt8>
+  }
+}
+extension HMAC {
+  convenience public init(key: Swift.String, variant: PaymentSDK.HMAC.Variant = .md5) throws
+}
+final public class AES {
+  public enum Error : Swift.Error {
+    case invalidKeySize
+    case dataPaddingRequired
+    case invalidData
+    public static func == (a: PaymentSDK.AES.Error, b: PaymentSDK.AES.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public enum Variant : Swift.Int {
+    case aes128, aes192, aes256
+    public typealias RawValue = Swift.Int
+    public init?(rawValue: Swift.Int)
+    public var rawValue: Swift.Int {
+      get
+    }
+  }
+  public static let blockSize: Swift.Int
+  final public let keySize: Swift.Int
+  final public let variant: PaymentSDK.AES.Variant
+  public init(key: Swift.Array<Swift.UInt8>, blockMode: PaymentSDK.BlockMode, padding: PaymentSDK.Padding = .pkcs7) throws
+  @objc deinit
+}
+extension AES : PaymentSDK.Cipher {
+  final public func encrypt(_ bytes: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  final public func decrypt(_ bytes: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+}
+public struct AnyCodable : Swift.Codable {
+  public let value: Any
+  public init<T>(_ value: T?)
+}
+extension AnyCodable : PaymentSDK._AnyEncodable, PaymentSDK._AnyDecodable {
+}
+extension AnyCodable : Swift.Equatable {
+  public static func == (lhs: PaymentSDK.AnyCodable, rhs: PaymentSDK.AnyCodable) -> Swift.Bool
+}
+extension AnyCodable : Swift.CustomStringConvertible {
+  public var description: Swift.String {
+    get
+  }
+}
+extension AnyCodable : Swift.CustomDebugStringConvertible {
+  public var debugDescription: Swift.String {
+    get
+  }
+}
+extension AnyCodable : Swift.ExpressibleByNilLiteral {
+}
+extension AnyCodable : Swift.ExpressibleByBooleanLiteral {
+  public typealias BooleanLiteralType = Swift.Bool
+}
+extension AnyCodable : Swift.ExpressibleByIntegerLiteral {
+  public typealias IntegerLiteralType = Swift.Int
+}
+extension AnyCodable : Swift.ExpressibleByFloatLiteral {
+  public typealias FloatLiteralType = Swift.Double
+}
+extension AnyCodable : Swift.ExpressibleByStringLiteral {
+  public typealias StringLiteralType = Swift.String
+  public typealias ExtendedGraphemeClusterLiteralType = Swift.String
+  public typealias UnicodeScalarLiteralType = Swift.String
+}
+extension AnyCodable : Swift.ExpressibleByArrayLiteral {
+  public typealias ArrayLiteralElement = Any
+}
+extension AnyCodable : Swift.ExpressibleByDictionaryLiteral {
+  public typealias Key = Swift.AnyHashable
+  public typealias Value = Any
+}
+extension Blowfish {
+  convenience public init(key: Swift.String, iv: Swift.String, padding: PaymentSDK.Padding = .pkcs7) throws
+}
+public struct CTR {
+  public enum Error : Swift.Error {
+    case invalidInitializationVector
+    public static func == (a: PaymentSDK.CTR.Error, b: PaymentSDK.CTR.Error) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public let options: PaymentSDK.BlockModeOption
+  public init(iv: Swift.Array<Swift.UInt8>, counter: Swift.Int = 0)
+  public func worker(blockSize: Swift.Int, cipherOperation: @escaping PaymentSDK.CipherOperationOnBlock) throws -> PaymentSDK.CipherModeWorker
+}
+final public class SHA2 {
+  public enum Variant : Swift.RawRepresentable {
+    case sha224, sha256, sha384, sha512
+    public var digestLength: Swift.Int {
+      get
+    }
+    public var blockSize: Swift.Int {
+      get
+    }
+    public typealias RawValue = Swift.Int
+    public var rawValue: PaymentSDK.SHA2.Variant.RawValue {
+      get
+    }
+    public init?(rawValue: PaymentSDK.SHA2.Variant.RawValue)
+  }
+  public init(variant: PaymentSDK.SHA2.Variant)
+  final public func calculate(for bytes: Swift.Array<Swift.UInt8>) -> Swift.Array<Swift.UInt8>
+  @objc deinit
+}
+extension SHA2 : PaymentSDK.Updatable {
+  final public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
+}
+extension PaymentSDK.Padding : Swift.Equatable {}
+extension PaymentSDK.Padding : Swift.Hashable {}
+extension PaymentSDK.CFB.Error : Swift.Equatable {}
+extension PaymentSDK.CFB.Error : Swift.Hashable {}
+extension PaymentSDK.ChaCha20.Error : Swift.Equatable {}
+extension PaymentSDK.ChaCha20.Error : Swift.Hashable {}
+extension PaymentSDK.CBCMAC.Error : Swift.Equatable {}
+extension PaymentSDK.CBCMAC.Error : Swift.Hashable {}
+extension PaymentSDK.CipherError : Swift.Equatable {}
+extension PaymentSDK.CipherError : Swift.Hashable {}
+extension PaymentSDK.PCBC.Error : Swift.Equatable {}
+extension PaymentSDK.PCBC.Error : Swift.Hashable {}
+extension PaymentSDK.Poly1305.Error : Swift.Equatable {}
+extension PaymentSDK.Poly1305.Error : Swift.Hashable {}
+extension PaymentSDK.HKDF.Error : Swift.Equatable {}
+extension PaymentSDK.HKDF.Error : Swift.Hashable {}
+extension PaymentSDK.Bit : Swift.Equatable {}
+extension PaymentSDK.Bit : Swift.Hashable {}
+extension PaymentSDK.Bit : Swift.RawRepresentable {}
+extension PaymentSDK.OFB.Error : Swift.Equatable {}
+extension PaymentSDK.OFB.Error : Swift.Hashable {}
+extension PaymentSDK.PKCS5.PBKDF1.Error : Swift.Equatable {}
+extension PaymentSDK.PKCS5.PBKDF1.Error : Swift.Hashable {}
+extension PaymentSDK.PKCS5.PBKDF1.Variant : Swift.Equatable {}
+extension PaymentSDK.PKCS5.PBKDF1.Variant : Swift.Hashable {}
+extension PaymentSDK.Environment : Swift.Hashable {}
+extension PaymentSDK.Environment : Swift.RawRepresentable {}
+extension PaymentSDK.CCM : PaymentSDK.BlockMode {}
+extension PaymentSDK.CCM.Error : Swift.Equatable {}
+extension PaymentSDK.CCM.Error : Swift.Hashable {}
+extension PaymentSDK.Rabbit.Error : Swift.Equatable {}
+extension PaymentSDK.Rabbit.Error : Swift.Hashable {}
+extension PaymentSDK.GCM.Mode : Swift.Equatable {}
+extension PaymentSDK.GCM.Mode : Swift.Hashable {}
+extension PaymentSDK.GCM.Error : Swift.Equatable {}
+extension PaymentSDK.GCM.Error : Swift.Hashable {}
+extension PaymentSDK.HMAC.Error : Swift.Equatable {}
+extension PaymentSDK.HMAC.Error : Swift.Hashable {}
+extension PaymentSDK.HMAC.Variant : Swift.Equatable {}
+extension PaymentSDK.HMAC.Variant : Swift.Hashable {}
+extension PaymentSDK.CBC.Error : Swift.Equatable {}
+extension PaymentSDK.CBC.Error : Swift.Hashable {}
+extension PaymentSDK.Blowfish.Error : Swift.Equatable {}
+extension PaymentSDK.Blowfish.Error : Swift.Hashable {}
+extension PaymentSDK.SHA3.Variant : Swift.Equatable {}
+extension PaymentSDK.SHA3.Variant : Swift.Hashable {}
+extension PaymentSDK.PKCS5.PBKDF2.Error : Swift.Equatable {}
+extension PaymentSDK.PKCS5.PBKDF2.Error : Swift.Hashable {}
+extension PaymentSDK.AES.Error : Swift.Equatable {}
+extension PaymentSDK.AES.Error : Swift.Hashable {}
+extension PaymentSDK.AES.Variant : Swift.Equatable {}
+extension PaymentSDK.AES.Variant : Swift.Hashable {}
+extension PaymentSDK.AES.Variant : Swift.RawRepresentable {}
+extension PaymentSDK.CTR : PaymentSDK.BlockMode {}
+extension PaymentSDK.CTR.Error : Swift.Equatable {}
+extension PaymentSDK.CTR.Error : Swift.Hashable {}
+extension PaymentSDK.SHA2.Variant : Swift.Equatable {}
+extension PaymentSDK.SHA2.Variant : Swift.Hashable {}

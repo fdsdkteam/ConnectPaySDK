@@ -1,0 +1,6 @@
+framework module PayWithMyBank {
+  umbrella header "PayWithMyBank.h"
+
+  export *
+  module * { export * }
+}
