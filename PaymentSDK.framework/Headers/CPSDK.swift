@@ -190,42 +190,37 @@ public class BaseCPFlow: NSObject {
             if let cpSdkConfiguration = self.cpSdkConfiguration {
                 ConfigurationManager.shared.sdkConstants = cpSdkConfiguration
                 let configurationRequest = ConfigurationRequest()
-                configurationRequest.makeRequest(withCompletionBlock: { (resultDictionary, success) in
-                    if success {
-                        ConfigurationManager.shared.configurationDictionary = resultDictionary
-                        let configurationVC = rootVC as! CPBaseViewController
-                        guard let displayWidgetType = ConfigurationManager.shared.mainScreenConfiguration?.displayWidgets.first?.widgets?.first?.type else {
-                            return
-                        }
-                        configurationVC.widgetType = displayWidgetType
-                        configurationVC.widgetConfiguration = ConfigurationManager.shared.mainScreenConfiguration?.widgets[displayWidgetType.rawValue]
-                        configurationVC.dataDictionary = self._getDataDictionary(forWidgetType: displayWidgetType) ?? [:]
-                        if displayWidgetType == .CPEnrollmentAccountDetailsWidget {
-                            configurationVC.mergeDictionaries()
-                        }
-                        
-                        // Remove any extra values from dataDictionary that don't exist in the configuration object
-                        var filteredDictionary = [String:String]()
-                        ConfigurationManager.shared.mainScreenConfiguration?.widgets.forEach({ (key, widget) in
-                            widget.flatFields.forEach({ (fieldConfiguration) in
-                                configurationVC.dataDictionary.forEach({ (key, value) in
-                                    var components = key.components(separatedBy: ".")
-                                    components.removeFirst()
-                                    let dictId = components.joined(separator: ".")
-                                    if dictId == fieldConfiguration.id {
-                                        filteredDictionary[key] = value
+                configurationRequest.makeRequest(withCompletionBlock: { (configurationResponse, success) in
+                    if success, let configurationResponse = configurationResponse {
+                        ConfigurationManager.shared.configurationDictionary = configurationResponse
+                        if ConfigurationManager.shared.cpSdkFlow == .updateEnrollment {
+                            let getDataRequest = GetDataRequest()
+                            getDataRequest.makeRequest(withCompletionBlock: { (responseDictionary, success) in
+                                if success, let getDataResponse = responseDictionary, self.handleGetDataResponse(response: getDataResponse, rootVC: rootVC) == true {
+                                    self.handleConfigurationResponse(response: configurationResponse, rootVC: rootVC)
+                                } else {
+                                    let enrollmentVC = EnrollmentResultViewController(widgetType: .None, dataDictionary: [:])
+                                    if let localizedResource = ConfigurationManager.shared.mainScreenConfiguration?.localizedResourceForCurrentLocale?.strings {
+                                        let errorTitle = localizedResource["error.label"]
+                                        let errorMessage = localizedResource["error.verbiage"]
+                                        let doneButtonTitle = localizedResource["doneButton.label"]
+                                        enrollmentVC.navBarTitle = errorTitle
+                                        enrollmentVC.messageVerbiage = errorMessage
+                                        enrollmentVC.primaryButtonTitle = doneButtonTitle
                                     }
-                                })
+                                    
+                                    enrollmentVC.resultDictionary = responseDictionary
+                                    enrollmentVC.success = false
+                                    let enrollmentNavController = UINavigationController(rootViewController: enrollmentVC)
+                                    navController.present(enrollmentNavController, animated: true, completion:nil)
+                                }
                             })
-                        })
-                        
-                        configurationVC.dataDictionary = filteredDictionary
-                        
-                        NotificationCenter.default.post(name: NSNotification.Name(rawValue: "DidLoadConfiguration"), object: nil)
-                        rootVC.tableView.reloadData()
+                        } else {
+                            self.handleConfigurationResponse(response: configurationResponse, rootVC: rootVC)
+                        }
                     } else {
                         DispatchQueue.main.async {
-                            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "PaymentSdkStopSession"), object: nil, userInfo: resultDictionary)
+                            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "PaymentSdkStopSession"), object: nil, userInfo: configurationResponse)
                         }
                     }
                 })
@@ -239,6 +234,96 @@ public class BaseCPFlow: NSObject {
         })
     }
     
+    fileprivate func handleConfigurationResponse(response: [String:AnyObject], rootVC: BaseViewController) {
+        let configurationVC = rootVC as! CPBaseViewController
+        guard let displayWidgetType = ConfigurationManager.shared.mainScreenConfiguration?.displayWidgets.first?.widgets?.first?.type else {
+            return
+        }
+        configurationVC.widgetType = displayWidgetType
+        configurationVC.widgetConfiguration = ConfigurationManager.shared.mainScreenConfiguration?.widgets[displayWidgetType.rawValue]
+        configurationVC.dataDictionary = self._getDataDictionary(forWidgetType: displayWidgetType) ?? [:]
+        if displayWidgetType == .CPEnrollmentAccountDetailsWidget {
+            configurationVC.mergeDictionaries()
+        }
+        configurationVC.dataDictionary.merge(configurationVC.fetchedUserData) { (_, new) in new }
+        // Remove any extra values from dataDictionary that don't exist in the configuration object
+        var filteredDictionary = [String:String]()
+        ConfigurationManager.shared.mainScreenConfiguration?.widgets.forEach({ (key, widget) in
+            widget.flatFields.forEach({ (fieldConfiguration) in
+                configurationVC.dataDictionary.forEach({ (key, value) in
+                    var components = key.components(separatedBy: ".")
+                    components.removeFirst()
+                    let dictId = components.joined(separator: ".")
+                    if dictId == fieldConfiguration.id {
+                        filteredDictionary[key] = value
+                    }
+                })
+            })
+        })
+        
+        configurationVC.dataDictionary = filteredDictionary
+        
+        NotificationCenter.default.post(name: NSNotification.Name(rawValue: "DidLoadConfiguration"), object: nil)
+        rootVC.tableView.reloadData()
+    }
+    
+    fileprivate func handleGetDataResponse(response: [String:AnyObject], rootVC: BaseViewController) -> Bool {
+        let configurationVC = rootVC as! CPBaseViewController
+//        let jsonStr = "{\"account\":[{\"userDetails\":{\"firstName\":\"John\",\"email\":\"jsmith@email.com\",\"lastName\":\"Smith\"},\"userIdentificationDetails\":{\"routingNumber\":\"*****0311\",\"accountNumber\":\"******1987\",\"onlineBankTransactionId\":\"1003948362\",\"bankName\":\"Wells Fargo\"},\"userPhone\":[{\"number\":\"2145553434\"}],\"userAddressDetails\":{\"street2\":\"\",\"state\":\"CA\",\"street\":\"2000 Broadway Street\",\"city\":\"Redwood City\",\"postalCode\":\"94063\"},\"accountStatus\":\"Pending\"}],\"transactionStatusCode\":0,\"referenceTransactionID\":\"df409725-54dc-f422-afda-e4f11ac28775\",\"customer\":{\"fdCustomerID\":\"1\"},\"transactionStatusDescription\":\"OK\",\"transactionStatus\":\"APPROVED\"}"
+//        var responseDictionary: [String: AnyObject]?
+//        if let data = jsonStr.data(using: .utf8) {
+//            do {
+//               responseDictionary = try JSONSerialization.jsonObject(with: data, options: []) as? [String: AnyObject]
+//            } catch {
+//                print(error.localizedDescription)
+//            }
+//        }
+        guard let accountDict = response["account"] as? [[String:AnyObject]] else {
+            //TODO: Send back an error
+            return false
+        }
+        let widgetType = WidgetType.CPUpdatePersonalInformationWidget
+        var accountDictionary = accountDict.first!
+        let userPhoneArray = accountDictionary["userPhone"] as! [[String:String]]
+        for index in 0..<userPhoneArray.count {
+            let indexStr = String(index)
+            let userPhoneDict = userPhoneArray[index]
+            if let phoneNumber = userPhoneDict["number"] {
+                configurationVC.fetchedUserData["\(widgetType.rawValue).userPhone[\(indexStr)].number"] = phoneNumber
+            }
+            if let type = userPhoneDict["type"] {
+                configurationVC.fetchedUserData["\(widgetType.rawValue).userPhone[\(indexStr)].type"] = type
+            }
+            if let primary = userPhoneDict["primary"] {
+                configurationVC.fetchedUserData["\(widgetType.rawValue).userPhone[\(indexStr)].primary"] = primary
+            }
+        }
+        accountDictionary.removeValue(forKey: "userPhone")
+        if let accountStatus = accountDictionary["accountStatus"] as? String {
+            configurationVC.fetchedUserData["\(widgetType.rawValue).accountStatus"] = accountStatus
+        }
+        if let accountStatus = accountDictionary["accountStatusDesc"] as? String {
+            configurationVC.fetchedUserData["\(widgetType.rawValue).accountStatusDesc"] = accountStatus
+        }
+
+        accountDictionary.forEach({ (key, value) in
+            if let dict = value as? [String:String] {
+                dict.forEach({ (keyStr, valueStr) in
+                    if valueStr != "" {
+                        if keyStr == "postalCode" {
+                            let postalCode = String(valueStr.prefix(5))
+                            configurationVC.fetchedUserData["\(widgetType.rawValue).\(keyStr)"] = postalCode
+                        } else {
+                            configurationVC.fetchedUserData["\(widgetType.rawValue).\(keyStr)"] = valueStr
+                        }
+                    }
+                })
+            }
+        })
+        
+        return true
+    }
+        
     fileprivate func _getDataDictionary(forWidgetType type: WidgetType) -> [String:String]? {
         return nil
     }
