@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
     s.name         = 'ConnectPaySDK'
-    s.version      = '1.0.8'
+    s.version      = '1.0.9'
     s.homepage    = 'https://fiserv.com'
     s.summary      = 'ConnectPay iOS SDK for enrolling and managing a User on the ConnectPay platform'
     s.license      = { :type => 'Apache License, Version 2.0', :text => <<-LICENSE
@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
     LICENSE
   }
     s.author       = { 'Gershon Lev' => 'gershon.lev@fiserv.com' }
-    s.source       = { :git => 'https://github.com/fdsdkteam/ConnectPaySDK_iOS.git', :tag => '1.0.8' }
+    s.source       = { :git => 'https://github.com/fdsdkteam/ConnectPaySDK_iOS.git', :tag => '1.0.9' }
     s.public_header_files = 'PaymentSDK.framework/Headers/*.h'
     s.source_files = 'PaymentSDK.framework/Headers/*.h', 'PayWithMyBank.framework/Headers/*.h', 'TMXProfiling.framework/Headers/*.h'
     s.vendored_frameworks = 'PaymentSDK.framework', 'PayWithMyBank.framework', 'TMXProfiling.framework'
