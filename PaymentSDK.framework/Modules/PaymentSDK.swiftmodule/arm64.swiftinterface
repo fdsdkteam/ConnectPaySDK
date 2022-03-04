@@ -1,14 +1,14 @@
 // swift-interface-format-version: 1.0
-// swift-compiler-version: Apple Swift version 5.1.3 (swiftlang-1100.0.282.1 clang-1100.0.33.15)
+// swift-compiler-version: Apple Swift version 5.3.2 (swiftlang-1200.0.45 clang-1200.0.32.28)
 // swift-module-flags: -target arm64-apple-ios11.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -module-name PaymentSDK
 import CommonCrypto
 import Darwin
 import Foundation
 import PayWithMyBank
 @_exported import PaymentSDK
+import RLTMXProfiling
 import Swift
 import SystemConfiguration
-import TMXProfiling
 import UIKit
 import WebKit
 public protocol Authenticator {
@@ -62,13 +62,13 @@ extension ChaCha20 : PaymentSDK.Cipher {
 }
 extension ChaCha20 {
   public struct ChaChaEncryptor : PaymentSDK.Cryptor, PaymentSDK.Updatable {
-    mutating public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
+    public mutating func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
     public func seek(to: Swift.Int) throws
   }
 }
 extension ChaCha20 {
   public struct ChaChaDecryptor : PaymentSDK.Cryptor, PaymentSDK.Updatable {
-    mutating public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = true) throws -> Swift.Array<Swift.UInt8>
+    public mutating func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = true) throws -> Swift.Array<Swift.UInt8>
     public func seek(to: Swift.Int) throws
   }
 }
@@ -119,10 +119,10 @@ public struct ECB : PaymentSDK.BlockMode {
   public init()
   public func worker(blockSize: Swift.Int, cipherOperation: @escaping PaymentSDK.CipherOperationOnBlock) throws -> PaymentSDK.CipherModeWorker
 }
-public class Reachability {
+@_hasMissingDesignatedInitializers public class Reachability {
   @objc deinit
 }
-public class BlockDecryptor : PaymentSDK.Cryptor, PaymentSDK.Updatable {
+@_hasMissingDesignatedInitializers public class BlockDecryptor : PaymentSDK.Cryptor, PaymentSDK.Updatable {
   public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
   public func seek(to position: Swift.Int) throws
   @objc deinit
@@ -228,16 +228,16 @@ public protocol Updatable {
   mutating func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
 }
 extension Updatable {
-  mutating public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
-  mutating public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
-  mutating public func update(withBytes bytes: Swift.Array<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
-  mutating public func update(withBytes bytes: Swift.Array<Swift.UInt8>, isLast: Swift.Bool = false, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
-  mutating public func finish(withBytes bytes: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
-  mutating public func finish(withBytes bytes: Swift.Array<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
-  mutating public func finish() throws -> Swift.Array<Swift.UInt8>
-  mutating public func finish(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
-  mutating public func finish(withBytes bytes: Swift.Array<Swift.UInt8>, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
-  mutating public func finish(output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
+  public mutating func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
+  public mutating func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
+  public mutating func update(withBytes bytes: Swift.Array<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
+  public mutating func update(withBytes bytes: Swift.Array<Swift.UInt8>, isLast: Swift.Bool = false, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
+  public mutating func finish(withBytes bytes: Swift.ArraySlice<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  public mutating func finish(withBytes bytes: Swift.Array<Swift.UInt8>) throws -> Swift.Array<Swift.UInt8>
+  public mutating func finish() throws -> Swift.Array<Swift.UInt8>
+  public mutating func finish(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
+  public mutating func finish(withBytes bytes: Swift.Array<Swift.UInt8>, output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
+  public mutating func finish(output: (Swift.Array<Swift.UInt8>) -> Swift.Void) throws
 }
 public struct MainScreenConfiguration : Swift.Codable {
   public init(from decoder: Swift.Decoder) throws
@@ -247,9 +247,9 @@ extension String {
   public func decryptBase64ToString(cipher: PaymentSDK.Cipher) throws -> Swift.String
   public func decryptBase64(cipher: PaymentSDK.Cipher) throws -> Swift.Array<Swift.UInt8>
 }
-final public class CMAC : PaymentSDK.CBCMAC {
-  override public init(key: Swift.Array<Swift.UInt8>) throws
+@_inheritsConvenienceInitializers final public class CMAC : PaymentSDK.CBCMAC {
   @objc deinit
+  override public init(key: Swift.Array<Swift.UInt8>) throws
 }
 public struct PCBC : PaymentSDK.BlockMode {
   public enum Error : Swift.Error {
@@ -424,7 +424,7 @@ extension PKCS5 {
     get
   }
 }
-@objc public class CPSdkConfiguration : ObjectiveC.NSObject {
+@_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @objc public class CPSdkConfiguration : ObjectiveC.NSObject {
   @objc public var fdCustomerId: Swift.String!
   @objc public var encryptionKey: Swift.String!
   @objc public var accessToken: Swift.String!
@@ -441,37 +441,37 @@ extension PKCS5 {
   @objc public func manualDeposit(withCpSdkConfiguration cpSdkConfiguration: PaymentSDK.CPSdkConfiguration, andManualDepositConfiguration manualDepositConfiguration: PaymentSDK.ManualDepositConfiguration) -> PaymentSDK.ManualDeposit?
   @objc public func accountValidation(withCpSdkConfiguration cpSdkConfiguration: PaymentSDK.CPSdkConfiguration, andAccountValidationConfiguration accountValidationConfiguration: PaymentSDK.AccountValidationConfiguration) -> PaymentSDK.AccountValidation?
   @objc public func enrollmentAccountDetail(withCpSdkConfiguration cpSdkConfiguration: PaymentSDK.CPSdkConfiguration, andEnrollmentAccountDetailConfiguration enrollmentAccountDetailConfiguration: PaymentSDK.ManualEnrollmentConfiguration) -> PaymentSDK.EnrollmentAccountDetails?
-  @objc override dynamic public init()
   @objc deinit
+  @objc override dynamic public init()
 }
-@objc public class BaseCPFlow : ObjectiveC.NSObject {
+@objc @_inheritsConvenienceInitializers public class BaseCPFlow : ObjectiveC.NSObject {
   @objc override dynamic public init()
   @objc deinit
   @objc public func start(completionHandler: @escaping ([Swift.String : Swift.AnyObject]?) -> Swift.Void)
   @objc public func stop()
 }
-@objc public class CloseAccountConfiguration : ObjectiveC.NSObject {
+@_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @objc public class CloseAccountConfiguration : ObjectiveC.NSObject {
   @objc public init(withAccountNumber accountNumber: Swift.String, andReason reason: Swift.String?)
   @objc deinit
 }
-@objc public class CloseAccount : PaymentSDK.BaseCPFlow {
+@_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @objc public class CloseAccount : PaymentSDK.BaseCPFlow {
   @objc deinit
 }
-@objc public class PhoneNumberConfiguration : ObjectiveC.NSObject {
+@_inheritsConvenienceInitializers @objc public class PhoneNumberConfiguration : ObjectiveC.NSObject {
   @objc public var id: Swift.String?
   @objc public var phoneNumber: Swift.String?
   @objc public var type: Swift.String?
-  @objc override dynamic public init()
   @objc deinit
+  @objc override dynamic public init()
 }
-@objc public class SecurityQuestionConfiguration : ObjectiveC.NSObject {
+@_inheritsConvenienceInitializers @objc public class SecurityQuestionConfiguration : ObjectiveC.NSObject {
   @objc public var id: Swift.String?
   @objc public var question: Swift.String?
   @objc public var answer: Swift.String?
-  @objc override dynamic public init()
   @objc deinit
+  @objc override dynamic public init()
 }
-@objc public class ManualEnrollmentConfiguration : ObjectiveC.NSObject {
+@_inheritsConvenienceInitializers @objc public class ManualEnrollmentConfiguration : ObjectiveC.NSObject {
   @objc public var routingNumber: Swift.String?
   @objc public var accountNumber: Swift.String?
   @objc public var accountType: Swift.String?
@@ -504,35 +504,35 @@ extension PKCS5 {
   @objc public var reportingField1: Swift.String?
   @objc public var reportingField2: Swift.String?
   @objc public var reportingField3: Swift.String?
+  @objc deinit
   @objc override dynamic public init()
+}
+@_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @objc public class ManualEnrollment : PaymentSDK.BaseCPFlow {
   @objc deinit
 }
-@objc public class ManualEnrollment : PaymentSDK.BaseCPFlow {
+@_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @objc public class UpdateEnrollment : PaymentSDK.BaseCPFlow {
   @objc deinit
 }
-@objc public class UpdateEnrollment : PaymentSDK.BaseCPFlow {
+@_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @objc public class EnrollmentAccountDetails : PaymentSDK.BaseCPFlow {
   @objc deinit
 }
-@objc public class EnrollmentAccountDetails : PaymentSDK.BaseCPFlow {
-  @objc deinit
-}
-@objc public class ManualDepositConfiguration : ObjectiveC.NSObject {
+@_inheritsConvenienceInitializers @objc public class ManualDepositConfiguration : ObjectiveC.NSObject {
   @objc public var accountNumber: Swift.String?
   @objc public var firstDepositedAmount: Swift.String?
   @objc public var secondDepositedAmount: Swift.String?
+  @objc deinit
   @objc override dynamic public init()
+}
+@_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @objc public class ManualDeposit : PaymentSDK.BaseCPFlow {
   @objc deinit
 }
-@objc public class ManualDeposit : PaymentSDK.BaseCPFlow {
-  @objc deinit
-}
-@objc public class AccountValidationConfiguration : ObjectiveC.NSObject {
+@_inheritsConvenienceInitializers @objc public class AccountValidationConfiguration : ObjectiveC.NSObject {
   @objc public var cpCardNumber: Swift.String?
   @objc public var pin: Swift.String?
-  @objc override dynamic public init()
   @objc deinit
+  @objc override dynamic public init()
 }
-@objc public class AccountValidation : PaymentSDK.BaseCPFlow {
+@_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @objc public class AccountValidation : PaymentSDK.BaseCPFlow {
   @objc deinit
 }
 public struct CCM {
@@ -620,7 +620,7 @@ final public class GCM : PaymentSDK.BlockMode {
   final public func worker(blockSize: Swift.Int, cipherOperation: @escaping PaymentSDK.CipherOperationOnBlock) throws -> PaymentSDK.CipherModeWorker
   @objc deinit
 }
-final public class Checksum {
+@_hasMissingDesignatedInitializers final public class Checksum {
   @objc deinit
 }
 extension Checksum {
@@ -752,7 +752,7 @@ final public class SHA3 {
 extension SHA3 : PaymentSDK.Updatable {
   final public func update(withBytes bytes: Swift.ArraySlice<Swift.UInt8>, isLast: Swift.Bool = false) throws -> Swift.Array<Swift.UInt8>
 }
-final public class AEADChaCha20Poly1305 : PaymentSDK.AEAD {
+@_hasMissingDesignatedInitializers final public class AEADChaCha20Poly1305 : PaymentSDK.AEAD {
   public static let kLen: Swift.Int
   public static var ivRange: Swift.Range<Swift.Int>
   public static func encrypt(_ plainText: Swift.Array<Swift.UInt8>, key: Swift.Array<Swift.UInt8>, iv: Swift.Array<Swift.UInt8>, authenticationHeader: Swift.Array<Swift.UInt8>) throws -> (cipherText: Swift.Array<Swift.UInt8>, authenticationTag: Swift.Array<Swift.UInt8>)
@@ -936,6 +936,7 @@ extension PaymentSDK.PKCS5.PBKDF1.Error : Swift.Equatable {}
 extension PaymentSDK.PKCS5.PBKDF1.Error : Swift.Hashable {}
 extension PaymentSDK.PKCS5.PBKDF1.Variant : Swift.Equatable {}
 extension PaymentSDK.PKCS5.PBKDF1.Variant : Swift.Hashable {}
+extension PaymentSDK.Environment : Swift.Equatable {}
 extension PaymentSDK.Environment : Swift.Hashable {}
 extension PaymentSDK.Environment : Swift.RawRepresentable {}
 extension PaymentSDK.CCM : PaymentSDK.BlockMode {}

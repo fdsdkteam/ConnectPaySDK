@@ -178,6 +178,7 @@ public class BaseCPFlow: NSObject {
         ConfigurationManager.shared.configurationDictionary = nil
         //ConfigurationManager.shared.sdkConstants = nil
         ConfigurationManager.shared.apiKey = nil
+        self.completionHandler = nil
     }
     
     //MARK: Private methods
@@ -190,37 +191,49 @@ public class BaseCPFlow: NSObject {
             if let cpSdkConfiguration = self.cpSdkConfiguration {
                 ConfigurationManager.shared.sdkConstants = cpSdkConfiguration
                 let configurationRequest = ConfigurationRequest()
+                FDProgressHUD.showAdded(to: navController)
                 configurationRequest.makeRequest(withCompletionBlock: { (configurationResponse, success) in
-                    if success, let configurationResponse = configurationResponse {
-                        ConfigurationManager.shared.configurationDictionary = configurationResponse
-                        if ConfigurationManager.shared.cpSdkFlow == .updateEnrollment {
-                            let getDataRequest = GetDataRequest()
-                            getDataRequest.makeRequest(withCompletionBlock: { (responseDictionary, success) in
-                                if success, let getDataResponse = responseDictionary, self.handleGetDataResponse(response: getDataResponse, rootVC: rootVC) == true {
-                                    self.handleConfigurationResponse(response: configurationResponse, rootVC: rootVC)
-                                } else {
-                                    let enrollmentVC = EnrollmentResultViewController(widgetType: .None, dataDictionary: [:])
-                                    if let localizedResource = ConfigurationManager.shared.mainScreenConfiguration?.localizedResourceForCurrentLocale?.strings {
-                                        let errorTitle = localizedResource["error.label"]
-                                        let errorMessage = localizedResource["error.verbiage"]
-                                        let doneButtonTitle = localizedResource["doneButton.label"]
-                                        enrollmentVC.navBarTitle = errorTitle
-                                        enrollmentVC.messageVerbiage = errorMessage
-                                        enrollmentVC.primaryButtonTitle = doneButtonTitle
+                    DispatchQueue.main.async {
+                        if success, let configurationResponse = configurationResponse {
+                            ConfigurationManager.shared.configurationDictionary = configurationResponse
+                            if ConfigurationManager.shared.cpSdkFlow == .updateEnrollment {
+                                let getDataRequest = GetDataRequest()
+                                getDataRequest.makeRequest(withCompletionBlock: { (responseDictionary, success) in
+                                    DispatchQueue.main.async {
+                                        FDProgressHUD.hideFor(viewController: navController)
                                     }
-                                    
-                                    enrollmentVC.resultDictionary = responseDictionary
-                                    enrollmentVC.success = false
-                                    let enrollmentNavController = UINavigationController(rootViewController: enrollmentVC)
-                                    navController.present(enrollmentNavController, animated: true, completion:nil)
+                                    if success, let getDataResponse = responseDictionary, self.handleGetDataResponse(response: getDataResponse, rootVC: rootVC) == true {
+                                        self.handleConfigurationResponse(response: configurationResponse, rootVC: rootVC)
+                                    } else {
+                                        DispatchQueue.main.async {
+                                            let enrollmentVC = EnrollmentResultViewController(widgetType: .None, dataDictionary: [:])
+                                            if let localizedResource = ConfigurationManager.shared.mainScreenConfiguration?.localizedResourceForCurrentLocale?.strings {
+                                                let errorTitle = localizedResource["error.label"]
+                                                let errorMessage = localizedResource["error.verbiage"]
+                                                let doneButtonTitle = localizedResource["doneButton.label"]
+                                                enrollmentVC.navBarTitle = errorTitle
+                                                enrollmentVC.messageVerbiage = errorMessage
+                                                enrollmentVC.primaryButtonTitle = doneButtonTitle
+                                            }
+                                            
+                                            enrollmentVC.resultDictionary = responseDictionary
+                                            enrollmentVC.success = false
+                                            let enrollmentNavController = UINavigationController(rootViewController: enrollmentVC)
+                                            navController.present(enrollmentNavController, animated: true, completion:nil)
+                                        }
+                                        
+                                    }
+                                })
+                            } else {
+                                DispatchQueue.main.async {
+                                    FDProgressHUD.hideFor(viewController: navController)
                                 }
-                            })
+                                self.handleConfigurationResponse(response: configurationResponse, rootVC: rootVC)
+                            }
                         } else {
-                            self.handleConfigurationResponse(response: configurationResponse, rootVC: rootVC)
-                        }
-                    } else {
-                        DispatchQueue.main.async {
-                            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "PaymentSdkStopSession"), object: nil, userInfo: configurationResponse)
+                            DispatchQueue.main.async {
+                                NotificationCenter.default.post(name: NSNotification.Name(rawValue: "PaymentSdkStopSession"), object: nil, userInfo: configurationResponse)
+                            }
                         }
                     }
                 })
@@ -235,36 +248,39 @@ public class BaseCPFlow: NSObject {
     }
     
     fileprivate func handleConfigurationResponse(response: [String:AnyObject], rootVC: BaseViewController) {
-        let configurationVC = rootVC as! CPBaseViewController
-        guard let displayWidgetType = ConfigurationManager.shared.mainScreenConfiguration?.displayWidgets.first?.widgets?.first?.type else {
-            return
-        }
-        configurationVC.widgetType = displayWidgetType
-        configurationVC.widgetConfiguration = ConfigurationManager.shared.mainScreenConfiguration?.widgets[displayWidgetType.rawValue]
-        configurationVC.dataDictionary = self._getDataDictionary(forWidgetType: displayWidgetType) ?? [:]
-        if displayWidgetType == .CPEnrollmentAccountDetailsWidget {
-            configurationVC.mergeDictionaries()
-        }
-        configurationVC.dataDictionary.merge(configurationVC.fetchedUserData) { (_, new) in new }
-        // Remove any extra values from dataDictionary that don't exist in the configuration object
-        var filteredDictionary = [String:String]()
-        ConfigurationManager.shared.mainScreenConfiguration?.widgets.forEach({ (key, widget) in
-            widget.flatFields.forEach({ (fieldConfiguration) in
-                configurationVC.dataDictionary.forEach({ (key, value) in
-                    var components = key.components(separatedBy: ".")
-                    components.removeFirst()
-                    let dictId = components.joined(separator: ".")
-                    if dictId == fieldConfiguration.id {
-                        filteredDictionary[key] = value
-                    }
+        DispatchQueue.main.async {
+            let configurationVC = rootVC as! CPBaseViewController
+            guard let displayWidgetType = ConfigurationManager.shared.mainScreenConfiguration?.displayWidgets.first?.widgets?.first?.type else {
+                return
+            }
+            configurationVC.widgetType = displayWidgetType
+            configurationVC.widgetConfiguration = ConfigurationManager.shared.mainScreenConfiguration?.widgets[displayWidgetType.rawValue]
+            configurationVC.dataDictionary = self._getDataDictionary(forWidgetType: displayWidgetType) ?? [:]
+            if displayWidgetType == .CPEnrollmentAccountDetailsWidget {
+                configurationVC.mergeDictionaries()
+            }
+            configurationVC.dataDictionary.merge(configurationVC.fetchedUserData) { (_, new) in new }
+            // Remove any extra values from dataDictionary that don't exist in the configuration object
+            var filteredDictionary = [String:String]()
+            ConfigurationManager.shared.mainScreenConfiguration?.widgets.forEach({ (key, widget) in
+                widget.flatFields.forEach({ (fieldConfiguration) in
+                    configurationVC.dataDictionary.forEach({ (key, value) in
+                        var components = key.components(separatedBy: ".")
+                        components.removeFirst()
+                        let dictId = components.joined(separator: ".")
+                        if dictId == fieldConfiguration.id {
+                            filteredDictionary[key] = value
+                        }
+                    })
                 })
             })
-        })
+            
+            configurationVC.dataDictionary = filteredDictionary
+            
+            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "DidLoadConfiguration"), object: nil)
+            rootVC.tableView.reloadData()
+        }
         
-        configurationVC.dataDictionary = filteredDictionary
-        
-        NotificationCenter.default.post(name: NSNotification.Name(rawValue: "DidLoadConfiguration"), object: nil)
-        rootVC.tableView.reloadData()
     }
     
     fileprivate func handleGetDataResponse(response: [String:AnyObject], rootVC: BaseViewController) -> Bool {
